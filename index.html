@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Work/Off Day Calendar</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <style>
+    .calendar {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 6px;
+      margin-top: 15px;
+    }
+    .day-header {
+      text-align: center;
+      font-weight: bold;
+      padding: 6px;
+      background: #f1f1f1;
+      border-radius: 6px;
+    }
+    .day {
+      border: 1px solid #dee2e6;
+      border-radius: 8px;
+      padding: 10px 5px;
+      text-align: center;
+      font-size: 14px;
+      min-height: 70px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+    .work {
+      background-color: #d1e7dd; /* green */
+      color: #0f5132;
+    }
+    .off {
+      background-color: #f8d7da; /* red */
+      color: #842029;
+    }
+    .before-join {
+      background-color: #e2e3e5; /* gray */
+      color: #495057;
+    }
+    .empty {
+      background: transparent;
+      border: none;
+    }
+    .badge {
+      font-size: 0.75rem;
+    }
+  </style>
+</head>
+<body class="bg-light p-4">
+
+  <div class="container">
+    <h2 class="mb-4 text-center">Work/Off Day Calendar</h2>
+
+    <div class="row g-3">
+      <!-- Joining Date -->
+      <div class="col-md-6">
+        <label class="form-label">Joining Date</label>
+        <input type="date" id="joiningDate" class="form-control" value="2024-08-12">
+      </div>
+
+      <!-- Observation -->
+      <div class="col-md-6">
+        <label class="form-label">Observation Pattern</label>
+        <input type="text" id="pattern" class="form-control" placeholder="e.g. 4,4 (work, off)" value="4,4">
+      </div>
+    </div>
+
+    <div class="row g-3 mt-3">
+      <!-- Year -->
+      <div class="col-md-6">
+        <label class="form-label">Year</label>
+        <select id="yearSelect" class="form-select"></select>
+      </div>
+
+      <!-- Month -->
+      <div class="col-md-6">
+        <label class="form-label">Month</label>
+        <select id="monthSelect" class="form-select">
+          <option value="0">January</option>
+          <option value="1">February</option>
+          <option value="2">March</option>
+          <option value="3">April</option>
+          <option value="4">May</option>
+          <option value="5">June</option>
+          <option value="6">July</option>
+          <option value="7">August</option>
+          <option value="8">September</option>
+          <option value="9">October</option>
+          <option value="10">November</option>
+          <option value="11">December</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="mt-4 text-center">
+      <button class="btn btn-primary" onclick="calculate()">Generate Calendar</button>
+    </div>
+
+    <div class="card mt-4">
+      <div class="card-body">
+        <h5 class="card-title">Result</h5>
+        <p id="result">Select inputs and click Generate Calendar</p>
+        <div id="calendar" class="calendar"></div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Populate Year dropdown
+    const yearSelect = document.getElementById("yearSelect");
+    const currentYear = new Date().getFullYear();
+    for (let y = currentYear - 5; y <= currentYear + 5; y++) {
+      const option = document.createElement("option");
+      option.value = y;
+      option.textContent = y;
+      if (y === currentYear) option.selected = true;
+      yearSelect.appendChild(option);
+    }
+
+    function calculate() {
+      const joinDate = new Date(document.getElementById("joiningDate").value);
+      const [workDays, offDays] = document.getElementById("pattern").value.split(",").map(Number);
+      const year = parseInt(document.getElementById("yearSelect").value);
+      const month = parseInt(document.getElementById("monthSelect").value);
+
+      if (isNaN(joinDate) || isNaN(workDays) || isNaN(offDays)) {
+        document.getElementById("result").innerText = "Please enter valid inputs.";
+        return;
+      }
+
+      const cycle = workDays + offDays;
+      const firstDay = new Date(year, month, 1);
+      const lastDay = new Date(year, month + 1, 0);
+
+      let workingCount = 0;
+      let offCount = 0;
+      let calendarHTML = "";
+
+      // Add weekday headers
+      const weekdays = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+      weekdays.forEach(day => {
+        calendarHTML += `<div class="day-header">${day}</div>`;
+      });
+
+      // Add empty slots before first day
+      for (let i = 0; i < firstDay.getDay(); i++) {
+        calendarHTML += `<div class="day empty"></div>`;
+      }
+
+      // Loop through days
+      for (let d = 1; d <= lastDay.getDate(); d++) {
+        const currentDate = new Date(year, month, d);
+        const diffDays = Math.floor((currentDate - joinDate) / (1000 * 60 * 60 * 24));
+
+        if (diffDays >= 0) {
+          const cycleDay = diffDays % cycle;
+          if (cycleDay < workDays) {
+            calendarHTML += `<div class="day work">${d}<br><span class="badge bg-success">Work</span></div>`;
+            workingCount++;
+          } else {
+            calendarHTML += `<div class="day off">${d}<br><span class="badge bg-danger">Off</span></div>`;
+            offCount++;
+          }
+        } else {
+          calendarHTML += `<div class="day before-join">${d}<br><span class="badge bg-secondary">Before Join</span></div>`;
+        }
+      }
+
+      document.getElementById("calendar").innerHTML = calendarHTML;
+      document.getElementById("result").innerText =
+        `In ${year}-${month + 1}, Work Days: ${workingCount}, Off Days: ${offCount}`;
+    }
+  </script>
+</body>
+</html>
